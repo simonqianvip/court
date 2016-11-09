@@ -12,5 +12,8 @@ class CourtItem(scrapy.Item):
     # define the fields for your item here like:
     # name = scrapy.Field()
     title = scrapy.Field()
-    path = scrapy.Field()
+    c_name = scrapy.Field()
+    number = scrapy.Field()
+    c_date = scrapy.Field()
+    link = scrapy.Field()
     pass

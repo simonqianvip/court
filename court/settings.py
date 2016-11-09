@@ -64,9 +64,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-# ITEM_PIPELINES = {
-#    'court.pipelines.SomePipeline': 300,
-# }
+ITEM_PIPELINES = {
+   # 'court.pipelines.SomePipeline': 300,
+    'court.pipelines.MySQLStoreCourtPipeline':300,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -91,3 +92,11 @@ AUTOTHROTTLE_DEBUG = True
 # HTTPCACHE_STORAGE = 'scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 DEPTH_LIMIT = 0
+
+
+# start MySQL database configure setting
+MYSQL_HOST = 'localhost'
+MYSQL_DBNAME = 'fm'
+MYSQL_USER = 'root'
+MYSQL_PASSWD = '123456'
+# end of MySQL database configure setting

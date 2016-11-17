@@ -59,18 +59,22 @@ class MySQLStoreCourtPipeline(object):
         """
         CREATE TABLE `court_info` (
           `id` int NOT NULL AUTO_INCREMENT COMMENT '主键',
-          `title` varchar(100) COMMENT "标题",
+          `title` varchar(500) COMMENT "标题",
           `c_name` varchar(100) COMMENT '法院名称',
           `number` varchar(100)  COMMENT '案件编号',
           `c_date` VARCHAR(50)  COMMENT '日期',
-          `link` VARCHAR(200)  COMMENT 'url',
+          `link` VARCHAR(500)  COMMENT 'url',
+          `sentence` VARCHAR(200)  COMMENT '判决书类型',
+          `prosecutor` VARCHAR(200)  COMMENT '原告',
+          `accused` VARCHAR(200)  COMMENT '被告',
+          `search` VARCHAR(200)  COMMENT '公司名称',
           PRIMARY KEY (`id`)
         ) ENGINE=MyISAM DEFAULT CHARSET=utf8;
         """
         conn.execute("""
-                insert into court_info(title, c_name, number, c_date, link)
-                values(%s, %s, %s, %s ,%s)
-                """, (item['title'],item['c_name'] ,item['number'],item['c_date'],item['link']))
+                insert into court_info(title, c_name, number, c_date, link,sentence,prosecutor,accused,search)
+                values(%s, %s, %s, %s ,%s,%s,%s,%s,%s)
+                """, (item['title'],item['c_name'] ,item['number'],item['c_date'],item['link'],item['sentence'],item['prosecutor'],item['accused'],item['search']))
         logger.info('insert into success')
 
     def _handle_error(self, failue):

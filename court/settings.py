@@ -53,7 +53,8 @@ COOKIES_ENABLED = False
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
     #    'court.middlewares.MyCustomDownloaderMiddleware': 543,
-    'court.Rotate_useragent.RotateUserAgentMiddleware': 400,
+    'court.rotate_useragent.RotateUserAgentMiddleware': 400,
+    # 'court.proxy_middleware.ProxyMiddleware':100
 }
 
 # Enable or disable extensions

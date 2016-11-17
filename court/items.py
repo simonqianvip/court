@@ -16,4 +16,14 @@ class CourtItem(scrapy.Item):
     number = scrapy.Field()
     c_date = scrapy.Field()
     link = scrapy.Field()
+    # 原告
+    prosecutor = scrapy.Field()
+    # prosecutor_name = scrapy.Field()
+    # 被告
+    accused = scrapy.Field()
+    # accused_name = scrapy.Field()
+    # 判决类型
+    sentence = scrapy.Field()
+    # 企业名称
+    search = scrapy.Field()
     pass

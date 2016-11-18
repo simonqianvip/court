@@ -154,7 +154,7 @@ class CourtSpider(scrapy.Spider):
                             存在，详情页都不进入，数据也不保存
                             不存在，则相反
                         '''
-                        query_sql = '''select * from court_info where link = %s''' % link
+                        query_sql = """select * from court_info where link = '%s'""" % link
                         results = self.mysql_util.get_data_from_db(query_sql)
                         if results:
                             logger.info('------------Data is Exist------------')
@@ -226,7 +226,7 @@ class CourtSpider(scrapy.Spider):
                             item['search'] = company_name
                             items.append(item)
 
-                            rd = random.randint(1, 10)
+                            rd = random.randint(5, 10)
                             time.sleep(rd)
 
                     flag, page_num = self.next_page(flag, page_num)
@@ -447,12 +447,19 @@ class CourtSpider(scrapy.Spider):
         :return:
         '''
         try:
-            self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').clear()
+            gover_search_keys = self.driver.find_elements_by_xpath('//*[@id="gover_search_key"]')
+            if gover_search_keys:
+                for gsk in gover_search_keys:
+                    gsk.clear()
+                    gsk.send_keys(company_name)
             # TODO 在查询第二个企业的时候必须触发此操作(前提企业名称是从数据库里查询的)
             # self.driver.find_element_by_xpath('//*[@id="conditionCollect"]/ul/li[3]/a').click()
             # TODO 读取企业库，获取所有的企业名称，待完成
-            self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').send_keys(company_name)
-            self.driver.find_element_by_xpath('//*[@id="searchBox"]/div/div[3]/button').click()
+
+            searchBoxs = self.driver.find_elements_by_xpath('//*[@id="searchBox"]/div/div[3]/button')
+            if searchBoxs:
+                for sb in searchBoxs:
+                    sb.click()
             # 窗口设置成最大化
             self.driver.maximize_window()
 

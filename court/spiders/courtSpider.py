@@ -11,7 +11,7 @@ import random
 import re
 from selenium.webdriver import ActionChains
 from selenium.webdriver.common.keys import Keys
-
+from court.util.mysql_util import SqlUtil
 from autopy import alert
 from autopy import mouse
 from autopy import key
@@ -26,13 +26,21 @@ from io import BytesIO
 logger = logging.getLogger(__name__)
 # 下载的文件目录
 File_DIR = 'd:\\court_Download'
-company_name = u'四川德胜集团钒钛有限公司'
+company_name = u'濮阳濮耐高温材料（集团）股份有限公司'
+'''
+濮阳濮耐高温材料（集团）股份有限公司 股票代码：002225 股票简称：濮耐股份
+山东鲁阳节能材料股份有限公司 股票代码：002088 股票简称：鲁阳节能
+瑞泰科技股份有限公司 股票代码：002066 股票简称：瑞泰科技
+北京金隅股份有限公司 股票代码：601992 股票简称：金隅股份
+广东东方锆业科技股份有限公司 股票代码：002167 股票简称：东方锆业
+福建海源自动化机械股份有限公司 股票代码：002529 股票简称：海源机械
+'''
 
 
 class CourtSpider(scrapy.Spider):
     '''
     1,火狐下载，不能修改文件名称
-    2,
+    2,纯数字的验证码可以破解
     '''
     def __init__(self):
         # 实例化一个火狐配置对象
@@ -46,6 +54,9 @@ class CourtSpider(scrapy.Spider):
         # pf.set_preference("prefs.converted-to-utf8","true")
         # self.driver = webdriver.Firefox(firefox_profile=pf,
         #                                 executable_path='D:\Program Files\Mozilla Firefox\geckodriver-v0.10.0-win64\geckodriver.exe')
+        # 连接mysql数据库，并查询论文名称
+        self.init_mysql()
+        logger.info('init mysql database')
 
         options = webdriver.ChromeOptions()
         prefs = {'profile.default_content_settings.popups': 0, 'download.default_directory': File_DIR}
@@ -53,19 +64,37 @@ class CourtSpider(scrapy.Spider):
         options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"])
         self.driver = webdriver.Chrome(chrome_options=options,executable_path='D:\program\chromedriver_win32\chromedriver.exe')
 
+    def init_mysql(self):
+        '''
+        初始化连接mysql数据库
+        :return: 连接对象
+        '''
+        self.mysql_util = SqlUtil('127.0.0.1', 'root', '123456', 'fm')
+        self.mysql_util.connect()
+
     name = "court"
     allowed_domains = ["wenshu.court.gov.cn"]
     start_urls = [
         "http://wenshu.court.gov.cn/Index"
    ]
 
+    def GetNowTime(self):
+        '''
+        获取当前系统时间
+        :return:
+        '''
+        return time.strftime("%Y-%m-%d %H:%M:%S")
+
     def parse(self, response):
+        # 获取时间
+        s_time = self.GetNowTime()
+
         self.driver.get(response.url)
         # TODO 查询企业
         self.search_company()
 
         # TODO 用来获取验证码
-        self.get_validateCode()#
+        self.get_validateCode()
 
         # TODO　选择每页显示的条数
         self.select_page_number()
@@ -78,6 +107,7 @@ class CourtSpider(scrapy.Spider):
             items = []
             flag = True
             page_num = 1
+            download_count = 0
             while flag:
                 logger.info('------当前第%d页------'%page_num)
                 # TODO 等待下一个页面的元素检查完毕
@@ -114,83 +144,110 @@ class CourtSpider(scrapy.Spider):
                         # 被告
                         accused = []
 
-                        if download_tags:
-                            for download_link in download_tags:
-                                # TODO 下载裁判文书
-                                download_link.click()
-                                # pass
-                        for t in title_tags:
-                            title_text = t.text
-
-                        for ti in title_info_tages:
-                            info = ti.text
-                            words = info.split("   ")
-                            if words:
-                                c_name = words[0]
-                                number = words[1]
-                                c_date = words[2]
                         for li in links:
                             url = li.get_attribute('href')
                             link = url
 
-                        a_tags = self.driver.find_elements_by_xpath('//*[@id="resultList"]/div[%d]/table/tbody/tr[1]/td/div/a'%i)
-                        for a in a_tags:
-                            a.click()
-
-                        handles = self.driver.window_handles
-                        # 切换到二级页面
-                        for h in handles:
-                            if h != main_handle:
-                                self.driver.switch_to_window(h)
-                        # 获取判断文书类型
-                        sentences = self.driver.find_elements_by_xpath('//*[@id="DivContent"]/div[2]')
-                        if sentences:
-                            for s in sentences:
-                                sentence = s.text
-
-                        # TODO 上诉人
-                        self.get_second_page_info(accused, prosecutor)
-
-                        self.close_second_page(main_handle)
-
-                        self.driver.switch_to_window(main_handle)
-
+                        # TODO 数据增量更新
                         '''
-                        title = scrapy.Field()
-                        c_name = scrapy.Field()
-                        number = scrapy.Field()
-                        c_date = scrapy.Field()
-                        link = scrapy.Field()
-                        # 判决类型
-                        sentence = scrapy.Field()
-                         # 原告
-                        prosecutor = scrapy.Field()
-                        # 被告
-                        accused = scrapy.Field()
+                        1,判断当前url是否存在
+                            存在，详情页都不进入，数据也不保存
+                            不存在，则相反
                         '''
-                        item = CourtItem()
-                        item['title'] = title_text
-                        item['c_name'] = c_name
-                        item['number'] = number
-                        item['c_date'] = c_date
-                        item['link'] = link
-                        item['sentence'] = sentence
-                        up = ''.join(prosecutor)
-                        item['prosecutor'] = up.encode('utf-8')
-                        ua = ''.join(accused)
-                        item['accused'] = ua.encode('utf-8')
-                        item['search'] = company_name
-                        items.append(item)
+                        query_sql = '''select * from court_info where link = %s''' % link
+                        results = self.mysql_util.get_data_from_db(query_sql)
+                        if results:
+                            logger.info('------------Data is Exist------------')
+                        else:
+                            if download_tags:
+                                for download_link in download_tags:
+                                    # TODO 下载裁判文书
+                                    download_link.click()
+                                    download_count = download_count + 1
+                                    # pass
+                            for t in title_tags:
+                                title_text = t.text
 
-                        rd = random.randint(1, 10)
-                        time.sleep(rd)
+                            for ti in title_info_tages:
+                                info = ti.text
+                                words = info.split("   ")
+                                if words:
+                                    c_name = words[0]
+                                    number = words[1]
+                                    c_date = words[2]
+
+
+                            a_tags = self.driver.find_elements_by_xpath('//*[@id="resultList"]/div[%d]/table/tbody/tr[1]/td/div/a'%i)
+                            for a in a_tags:
+                                a.click()
+
+                            handles = self.driver.window_handles
+                            # 切换到二级页面
+                            for h in handles:
+                                if h != main_handle:
+                                    self.driver.switch_to_window(h)
+                            # 获取判断文书类型
+                            sentences = self.driver.find_elements_by_xpath('//*[@id="DivContent"]/div[2]')
+                            if sentences:
+                                for s in sentences:
+                                    sentence = s.text
+
+                            # TODO 上诉人
+                            self.get_second_page_info(accused, prosecutor)
+
+                            self.close_second_page(main_handle)
+
+                            self.driver.switch_to_window(main_handle)
+
+                            '''
+                            title = scrapy.Field()
+                            c_name = scrapy.Field()
+                            number = scrapy.Field()
+                            c_date = scrapy.Field()
+                            link = scrapy.Field()
+                            # 判决类型
+                            sentence = scrapy.Field()
+                             # 原告
+                            prosecutor = scrapy.Field()
+                            # 被告
+                            accused = scrapy.Field()
+                            '''
+                            item = CourtItem()
+                            item['title'] = title_text
+                            item['c_name'] = c_name
+                            item['number'] = number
+                            item['c_date'] = c_date
+                            item['link'] = link
+                            item['sentence'] = sentence
+                            up = ''.join(prosecutor)
+                            item['prosecutor'] = up.encode('utf-8')
+                            ua = ''.join(accused)
+                            item['accused'] = ua.encode('utf-8')
+                            item['search'] = company_name
+                            items.append(item)
+
+                            rd = random.randint(1, 10)
+                            time.sleep(rd)
 
                     flag, page_num = self.next_page(flag, page_num)
+
+            # TODO 爬虫数据更新
+            e_time = self.GetNowTime()
+            u_count = len(items)
+            # 插入更新语句
+            insert_sql = """
+                    insert into spider_info(site,s_time,e_time,update_count,download_count)
+                    values('文书网','%s','%s','%s','%s')"""%(s_time,e_time,u_count,download_count)
+            results = self.mysql_util.exec_db_cmd(insert_sql)
 
         except Exception,e:
             logger.info(e)
         finally:
+            # 关闭数据库连接
+            self.mysql_util.disconnect()
+            logger.info('close mysql conn')
             self.driver.close()
+            logger.info('close webdriver')
         return items
 
     def next_page(self, flag, page_num):
@@ -389,20 +446,23 @@ class CourtSpider(scrapy.Spider):
         查询公司
         :return:
         '''
-        self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').clear()
-        # TODO 在查询第二个企业的时候必须触发此操作(前提企业名称是从数据库里查询的)
-        # self.driver.find_element_by_xpath('//*[@id="conditionCollect"]/ul/li[3]/a').click()
-        # TODO 读取企业库，获取所有的企业名称，待完成
-        self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').send_keys(company_name)
-        self.driver.find_element_by_xpath('//*[@id="searchBox"]/div/div[3]/button').click()
-        # 窗口设置成最大化
-        self.driver.maximize_window()
+        try:
+            self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').clear()
+            # TODO 在查询第二个企业的时候必须触发此操作(前提企业名称是从数据库里查询的)
+            # self.driver.find_element_by_xpath('//*[@id="conditionCollect"]/ul/li[3]/a').click()
+            # TODO 读取企业库，获取所有的企业名称，待完成
+            self.driver.find_element_by_xpath('//*[@id="gover_search_key"]').send_keys(company_name)
+            self.driver.find_element_by_xpath('//*[@id="searchBox"]/div/div[3]/button').click()
+            # 窗口设置成最大化
+            self.driver.maximize_window()
 
-        time.sleep(5)
-        handles = self.driver.window_handles
-        print 'handles = %s'%handles
-        for h in handles:
-            self.driver.switch_to_window(h)
+            time.sleep(5)
+            handles = self.driver.window_handles
+            print 'handles = %s'%handles
+            for h in handles:
+                self.driver.switch_to_window(h)
+        except Exception,e:
+            logger.error(e)
 
 
 if __name__ == '__main__':

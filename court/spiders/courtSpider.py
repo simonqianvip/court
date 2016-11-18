@@ -26,7 +26,7 @@ from io import BytesIO
 logger = logging.getLogger(__name__)
 # 下载的文件目录
 File_DIR = 'd:\\court_Download'
-company_name = u'濮阳濮耐高温材料（集团）股份有限公司'
+company_name = u'山东鲁阳节能材料股份有限公司'
 '''
 濮阳濮耐高温材料（集团）股份有限公司 股票代码：002225 股票简称：濮耐股份
 山东鲁阳节能材料股份有限公司 股票代码：002088 股票简称：鲁阳节能
@@ -427,15 +427,26 @@ class CourtSpider(scrapy.Spider):
         button = self.driver.find_element_by_xpath('//*[@id="14_button"]')
         #将页面滚动条拖到底部
         button.send_keys(Keys.DOWN)
+        rd = random.randint(1, 3)
         button.send_keys(Keys.DOWN)
+        rd = random.randint(1, 3)
         button.send_keys(Keys.DOWN)
+        rd = random.randint(1, 3)
         button.send_keys(Keys.DOWN)
+        rd = random.randint(1, 3)
         button.send_keys(Keys.DOWN)
+        rd = random.randint(1, 3)
         button.send_keys(Keys.DOWN)
         # ccc = chains.context_click(button)
         ccc = chains.click(button)
-        time.sleep(2)
-        ccc.send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN).send_keys(Keys.ARROW_DOWN)
+        rd = random.randint(1, 3)
+        ccc.send_keys(Keys.ARROW_DOWN)
+        rd = random.randint(1, 3)
+        ccc.send_keys(Keys.ARROW_DOWN)
+        rd = random.randint(1, 3)
+        ccc.send_keys(Keys.ARROW_DOWN)
+        rd = random.randint(1, 3)
+        ccc.send_keys(Keys.ARROW_DOWN)
         time.sleep(2)
         ccc.click(self.driver.find_element_by_xpath('//*[@id="14_input_20"]'))
         chains.perform()
@@ -465,7 +476,7 @@ class CourtSpider(scrapy.Spider):
 
             time.sleep(5)
             handles = self.driver.window_handles
-            print 'handles = %s'%handles
+            # print 'handles = %s'%handles
             for h in handles:
                 self.driver.switch_to_window(h)
         except Exception,e:

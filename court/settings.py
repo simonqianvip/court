@@ -101,3 +101,13 @@ MYSQL_DBNAME = 'fm'
 MYSQL_USER = 'root'
 MYSQL_PASSWD = '123456'
 # end of MySQL database configure setting
+
+# set logging info
+# log_file默认与spiders同目录
+LOG_FILE = '../log/court_log'
+LOG_ENABLED = True
+LOG_ENCODING = 'utf-8'
+LOG_LEVEL = 'INFO'
+LOG_FORMAT = '%(asctime)s [%(name)s] %(levelname)s: %(message)s'
+# LOG_DATEFORMAT
+LOG_STDOUT = True

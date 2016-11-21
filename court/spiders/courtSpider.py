@@ -110,14 +110,12 @@ class CourtSpider(scrapy.Spider):
             download_count = 0
             while flag:
                 logger.info('------当前第%d页------'%page_num)
-                # TODO 等待下一个页面的元素检查完毕
-                # wait = WebDriverWait(self.driver, 5)
-                # wait.until(lambda driver: driver.find_element_by_id("resultList"))
-                # //*[@id="resultList"]/div[2]
+                # TODO 等待元素的定为
+                self.driver.implicitly_wait(15)
                 dataItems = self.driver.find_elements_by_xpath('//*[@id="resultList"]/div')
 
                 time.sleep(10)
-                print 'dataItems.length = %d'%len(dataItems)
+                logger.info('dataItems.length = %d'%len(dataItems))
 
 
                 if dataItems:
@@ -320,79 +318,78 @@ class CourtSpider(scrapy.Spider):
                             0].__contains__(u'原告'):
                             # print split1
                             if split1[0].__contains__(u'公司'):
-                                print "No Match!!"
+                                logger.info("No Match!!")
                             else:
                                 if split1[0].startswith(u'原') or split1[0].startswith(u'上'):
-                                    print split1[0] + ',' + split1[1]
+                                    # logger.info(split1[0] + ',' + split1[1])
                                     prosecutor.append(split1[1] + ',')
                                 elif split1[0].startswith(u'被'):
-                                    print split1[0] + ',' + split1[1]
+                                    # print split1[0] + ',' + split1[1]
                                     accused.append(split1[1] + ',')
                         else:
-                            print "No Match!"
+                            logger.info( "No Match!")
                     else:
                         if strs.__contains__('、'):
-                            print "No Match"
+                            logger.info( "No Match")
                         else:
-                            # print len(strs)
-                            # print strs
                             if strs.__contains__(u'上诉人（原审原告）'):
                                 if strs.__contains__(u'被上诉人（原审被告）'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'上诉人（原审原告）'):
                                         prosecutor.append(strs[9:] + ',')
-                                        print strs[0:9] + ',' + strs[9:]
+                                        # print strs[0:9] + ',' + strs[9:]
 
                             elif strs.__contains__(u'被上诉人（原审被告）'):
                                 if strs.__contains__(u'上诉人（原审原告）'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'被上诉人（原审被告）'):
                                         accused.append(strs[10:] + ',')
-                                        print strs[10:]
+                                        # print strs[10:]
 
                             elif strs.__contains__(u'上诉人（原审被告）'):
                                 if strs.__contains__(u'被上诉人（原审原告）'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'上诉人（原审被告）'):
                                         prosecutor.append(strs[9:] + ',')
-                                        print strs[9:]
+                                        # print strs[9:]
 
                             elif strs.__contains__(u'被上诉人（原审原告）'):
                                 if strs.__contains__(u'上诉人（原审被告）'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'被上诉人（原审原告）'):
                                         accused.append(strs[10:] + ',')
-                                        print strs[10:]
+                                        # print strs[10:]
 
                             elif strs.__contains__(u'被告'):
                                 if strs.__contains__(u'原告'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'被告'):
                                         accused.append(strs[2:] + ',')
-                                        print strs[2:]
+                                        # print strs[2:]
 
                             elif strs.__contains__(u'原告'):
                                 if strs.__contains__(u'被告'):
-                                    print 'No Match!!'
+                                    logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'原告'):
                                         prosecutor.append(strs[2:] + ',')
-                                        print strs[2:]
+                                        # print strs[2:]
                             else:
-                                print "No match!!"
+                                logger.info("No match!!")
                 else:
-                    print "No match!!!"
+                    logger.info("No match!!!")
 
     def get_validateCode(self):
         '''
         破解验证码
         :return:
         '''
+
         validates = self.driver.find_elements_by_xpath('//*[@id="trValidateCode"]')
         vcode = ''
         if validates:
@@ -404,12 +401,12 @@ class CourtSpider(scrapy.Spider):
                 jpgFile = jpg.read()
                 image = Image.open(BytesIO(jpgFile))
                 vcode = pytesseract.image_to_string(image)
-                print 'code = %s' % vcode
+                # print 'code = %s' % vcode
             time.sleep(5)
             # 输入验证码
             self.driver.find_element_by_xpath('//*[@id="txtValidateCode"]').send_keys(vcode)
             self.driver.find_element_by_xpath('//*[@id="btnLogin"]').click()
-            time.sleep(5)
+            time.sleep(2)
             # TODO 已完
             validate_handles = self.driver.window_handles
             # print validate_handles
@@ -423,6 +420,8 @@ class CourtSpider(scrapy.Spider):
         选择每页显示的条数
         :return:
         '''
+        self.driver.implicitly_wait(10)
+
         chains = ActionChains(self.driver)
         button = self.driver.find_element_by_xpath('//*[@id="14_button"]')
         #将页面滚动条拖到底部
@@ -458,6 +457,8 @@ class CourtSpider(scrapy.Spider):
         :return:
         '''
         try:
+            # 隐式等待，如果被定为的元素30秒内没有出现，则出现NoSuchElementException异常
+            self.driver.implicitly_wait(30)
             gover_search_keys = self.driver.find_elements_by_xpath('//*[@id="gover_search_key"]')
             if gover_search_keys:
                 for gsk in gover_search_keys:

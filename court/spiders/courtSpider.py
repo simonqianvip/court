@@ -26,7 +26,7 @@ from io import BytesIO
 logger = logging.getLogger(__name__)
 # 下载的文件目录
 File_DIR = 'd:\\court_Download'
-company_name = u'山东鲁阳节能材料股份有限公司'
+company_name = u'广东东方锆业科技股份有限公司'
 '''
 濮阳濮耐高温材料（集团）股份有限公司 股票代码：002225 股票简称：濮耐股份
 山东鲁阳节能材料股份有限公司 股票代码：002088 股票简称：鲁阳节能
@@ -192,9 +192,10 @@ class CourtSpider(scrapy.Spider):
 
                             # TODO 上诉人
                             self.get_second_page_info(accused, prosecutor)
-
+                            time.sleep(random.randint(3,5))
+                            # 关闭详情页
                             self.close_second_page(main_handle)
-
+                            # 返回到主窗口
                             self.driver.switch_to_window(main_handle)
 
                             '''
@@ -224,8 +225,7 @@ class CourtSpider(scrapy.Spider):
                             item['search'] = company_name
                             items.append(item)
 
-                            rd = random.randint(5, 10)
-                            time.sleep(rd)
+                            time.sleep(random.randint(5, 10))
 
                     flag, page_num = self.next_page(flag, page_num)
 
@@ -237,6 +237,11 @@ class CourtSpider(scrapy.Spider):
                     insert into spider_info(site,s_time,e_time,update_count,download_count)
                     values('文书网','%s','%s','%s','%s')"""%(s_time,e_time,u_count,download_count)
             results = self.mysql_util.exec_db_cmd(insert_sql)
+
+            #    等待最后一个文件下载完，再关闭chrome浏览器
+
+            time.sleep(10)
+            logger.info('wait download for the last file , sleep 10 s')
 
         except Exception,e:
             logger.info(e)
@@ -257,28 +262,47 @@ class CourtSpider(scrapy.Spider):
         '''
         # span = self.driver.find_element_by_xpath('//*[@id="pageNumber"]/span[2]')
         # classValue = span.get_attribute("class")
-        span = self.driver.find_elements_by_xpath('//*[@id="pageNumber"]/span')
-        if len(span) > 1:
-            classValue = span[1].get_attribute("class")
-        else:
-            classValue = span[0].get_attribute("class")
-
-        if classValue == "current":
-            aText = self.driver.find_elements_by_xpath('//*[@id="pageNumber"]/a')
-            for a in aText:
-                if a.get_attribute("class") == "next":
-                    logger.info("class == " + a.get_attribute("class"))
+        # span = self.driver.find_elements_by_xpath('//*[@id="pageNumber"]/span')
+        # # 获取当前显示的页数
+        # if len(span) > 1:
+        #     classValue = span[1].get_attribute("class")
+        # else:
+        #     classValue = span[0].get_attribute("class")
+        #
+        # if classValue == "current":
+        #     aText = self.driver.find_elements_by_xpath('//*[@id="pageNumber"]/a')
+        #     for a in aText:
+        #         if a.get_attribute("class") == "next":
+        #             logger.info("class == " + a.get_attribute("class"))
+        #             # 点击下一页
+        #             logger.info('------点击下一页------')
+        #             page_num = page_num + 1
+        #             flag = True
+        #             a.click()
+        #         else:
+        #             flag = False
+        # else:
+        #     flag = False
+        # TODO 待测试
+        a_tags = self.driver.find_elements_by_xpath('//*[@id="pageNumber"]/a')
+        if a_tags:
+            for a in a_tags:
+                a_text = a.text
+                if a_text == u'下一页':
                     # 点击下一页
                     logger.info('------点击下一页------')
-                    a.click()
                     page_num = page_num + 1
+                    flag = True
+                    a.click()
                 else:
                     flag = False
         else:
             flag = False
+
         rd = random.randint(1, 60)
-        logger.info('------click next_page is sleep %s s------' % rd)
         time.sleep(rd)
+        logger.info('------click next_page is sleep %s s------' % rd)
+
         return flag, page_num
 
     def close_second_page(self, main_handle):
@@ -290,6 +314,7 @@ class CourtSpider(scrapy.Spider):
         second_handles = self.driver.window_handles
         for s in second_handles:
             if s != main_handle:
+                time.sleep(random.randint(1,5))
                 self.driver.switch_to_window(s)
                 self.driver.close()
 
@@ -426,25 +451,26 @@ class CourtSpider(scrapy.Spider):
         button = self.driver.find_element_by_xpath('//*[@id="14_button"]')
         #将页面滚动条拖到底部
         button.send_keys(Keys.DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         button.send_keys(Keys.DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         button.send_keys(Keys.DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         button.send_keys(Keys.DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         button.send_keys(Keys.DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         button.send_keys(Keys.DOWN)
         # ccc = chains.context_click(button)
+        #
         ccc = chains.click(button)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         ccc.send_keys(Keys.ARROW_DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         ccc.send_keys(Keys.ARROW_DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         ccc.send_keys(Keys.ARROW_DOWN)
-        rd = random.randint(1, 3)
+        time.sleep(random.randint(1, 3))
         ccc.send_keys(Keys.ARROW_DOWN)
         time.sleep(2)
         ccc.click(self.driver.find_element_by_xpath('//*[@id="14_input_20"]'))

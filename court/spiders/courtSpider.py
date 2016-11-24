@@ -403,7 +403,18 @@ class CourtSpider(scrapy.Spider):
                                 else:
                                     if strs.startswith(u'原告'):
                                         prosecutor.append(strs[2:] + ',')
-                                        # print strs[2:]
+                            elif strs.__contains__(u'申请执行人'):
+                                if strs.__contains__(u'被执行人'):
+                                    logger.info('No Match!!')
+                                else:
+                                    if strs.startswith(u'申请执行人'):
+                                        prosecutor.append(strs[5:] + ',')
+                            elif strs.__contains__(u'被执行人'):
+                                if strs.__contains__(u'申请执行人'):
+                                    logger.info('No Match!!')
+                                else:
+                                    if strs.startswith(u'被执行人'):
+                                        prosecutor.append(strs[4:] + ',')
                             else:
                                 logger.info("No match!!")
                 else:

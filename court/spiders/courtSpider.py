@@ -22,11 +22,12 @@ import pytesseract
 
 import urllib
 from io import BytesIO
+from selenium.common.exceptions import *
 
 logger = logging.getLogger(__name__)
 # 下载的文件目录
 File_DIR = 'd:\\court_Download'
-company_name = u'广东东方锆业科技股份有限公司'
+company_name = u'福建海源自动化机械股份有限公司'
 '''
 濮阳濮耐高温材料（集团）股份有限公司 股票代码：002225 股票简称：濮耐股份
 山东鲁阳节能材料股份有限公司 股票代码：002088 股票简称：鲁阳节能
@@ -57,11 +58,16 @@ class CourtSpider(scrapy.Spider):
         # 连接mysql数据库，并查询论文名称
         self.init_mysql()
         logger.info('init mysql database')
-
+        # TODO alert的捕捉
         options = webdriver.ChromeOptions()
-        prefs = {'profile.default_content_settings.popups': 0, 'download.default_directory': File_DIR}
+        prefs = {'profile.default_content_settings.popups': 0, 'download.default_directory': File_DIR,
+                 'CapabilityType':'UNEXPECTED_ALERT_BEHAVIOUR','UnexpectedAlertBehaviour':'ACCEPT'}
         options.add_experimental_option('prefs', prefs)
         options.add_experimental_option("excludeSwitches", ["ignore-certificate-errors"])
+        # capabilities_chrome = DesiredCapabilities.CHROME
+        # DesiredCapabilities dc = new DesiredCapabilities();
+        # dc.setCapability(CapabilityType.UNEXPECTED_ALERT_BEHAVIOUR,
+        # UnexpectedAlertBehaviour.ACCEPT);
         self.driver = webdriver.Chrome(chrome_options=options,executable_path='D:\program\chromedriver_win32\chromedriver.exe')
 
     def init_mysql(self):
@@ -177,6 +183,7 @@ class CourtSpider(scrapy.Spider):
 
                             a_tags = self.driver.find_elements_by_xpath('//*[@id="resultList"]/div[%d]/table/tbody/tr[1]/td/div/a'%i)
                             for a in a_tags:
+                                # 点击标题，打开详情页
                                 a.click()
 
                             handles = self.driver.window_handles
@@ -242,13 +249,17 @@ class CourtSpider(scrapy.Spider):
 
             time.sleep(10)
             logger.info('wait download for the last file , sleep 10 s')
-
+        except UnexpectedAlertPresentException:
+            # TODO 捕捉警告窗口, 点击确认按钮
+            to_alert = self.driver.switch_to.alert
+            alert_text = to_alert.text
+            logger.info(alert_text)
+            to_alert.accept()
         except Exception,e:
             logger.info(e)
         finally:
             # 关闭数据库连接
             self.mysql_util.disconnect()
-            logger.info('close mysql conn')
             self.driver.close()
             logger.info('close webdriver')
         return items
@@ -409,12 +420,13 @@ class CourtSpider(scrapy.Spider):
                                 else:
                                     if strs.startswith(u'申请执行人'):
                                         prosecutor.append(strs[5:] + ',')
+
                             elif strs.__contains__(u'被执行人'):
                                 if strs.__contains__(u'申请执行人'):
                                     logger.info('No Match!!')
                                 else:
                                     if strs.startswith(u'被执行人'):
-                                        prosecutor.append(strs[4:] + ',')
+                                        accused.append(strs[4:] + ',')
                             else:
                                 logger.info("No match!!")
                 else:

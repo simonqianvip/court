@@ -37,6 +37,8 @@ class SqlUtil():
             self.conn.close();
         except MySQLdb.Error, e:
             logger.info("Mysql disconnect Error %s" % (e))
+        finally:
+            logger.info('----------close mysql connecting----------')
 
     # Function: get data from mysql db(select)
     # Parameter: mysql query cmd string
